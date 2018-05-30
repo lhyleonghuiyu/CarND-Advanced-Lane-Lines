@@ -1,10 +1,4 @@
-## Writeup Template
-
-### You can use this file as a template for your writeup if you want to submit it as a markdown file, but feel free to use some other method and submit a pdf if you prefer.
-
----
-
-**Advanced Lane Finding Project**
+# Advanced Lane Finding Project**
 
 The goals / steps of this project are the following:
 
@@ -25,48 +19,29 @@ The goals / steps of this project are the following:
 [image4]: ./examples/warped_straight_lines.jpg "Warp Example"
 [image5]: ./examples/color_fit_lines.jpg "Fit Visual"
 [image6]: ./examples/example_output.jpg "Output"
-[video1]: ./project_video.mp4 "Video"
 
-## [Rubric](https://review.udacity.com/#!/rubrics/571/view) Points
+A pipeline was produced to process the images in the video, which wlil be explained in the following steps. 
 
-### Here I will consider the rubric points individually and describe how I addressed each point in my implementation.  
+## Camera Calibration
 
----
-
-### Writeup / README
-
-#### 1. Provide a Writeup / README that includes all the rubric points and how you addressed each one.  You can submit your writeup as markdown or pdf.  [Here](https://github.com/udacity/CarND-Advanced-Lane-Lines/blob/master/writeup_template.md) is a template writeup for this project you can use as a guide and a starting point.  
-
-You're reading it!
-
-### Camera Calibration
-
-#### 1. Briefly state how you computed the camera matrix and distortion coefficients. Provide an example of a distortion corrected calibration image.
-
-The code for this step is contained in the first code cell of the IPython notebook located in "./examples/example.ipynb" (or in lines # through # of the file called `some_file.py`).  
-
-I start by preparing "object points", which will be the (x, y, z) coordinates of the chessboard corners in the world. Here I am assuming the chessboard is fixed on the (x, y) plane at z=0, such that the object points are the same for each calibration image.  Thus, `objp` is just a replicated array of coordinates, and `objpoints` will be appended with a copy of it every time I successfully detect all chessboard corners in a test image.  `imgpoints` will be appended with the (x, y) pixel position of each of the corners in the image plane with each successful chessboard detection.  
+The camera calibration was performed using the chessboard images in the camera calibration file. Using the cv2 function, the "object points",which will be the (x, y, z) coordinates of the chessboard corners in the world are detected. Here I am assuming the chessboard is fixed on the (x, y) plane at z=0, such that the object points are the same for each calibration image.  Thus, `objp` is just a replicated array of coordinates, and `objpoints` will be appended with a copy of it every time I successfully detect all chessboard corners in a test image.  `imgpoints` will be appended with the (x, y) pixel position of each of the corners in the image plane with each successful chessboard detection.
 
 I then used the output `objpoints` and `imgpoints` to compute the camera calibration and distortion coefficients using the `cv2.calibrateCamera()` function.  I applied this distortion correction to the test image using the `cv2.undistort()` function and obtained this result: 
 
 ![alt text][image1]
 
-### Pipeline (single images)
+## Pipeline (single images)
 
-#### 1. Provide an example of a distortion-corrected image.
+### 1. Undistortion
 
-To demonstrate this step, I will describe how I apply the distortion correction to one of the test images like this one:
+The first step of the pipeline is to undistort incoming images. The image below is an example of the undistorted image. 
 ![alt text][image2]
 
-#### 2. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
+### 2. Perspective transform
 
-I used a combination of color and gradient thresholds to generate a binary image (thresholding steps at lines # through # in `another_file.py`).  Here's an example of my output for this step.  (note: this is not actually from one of the test images)
+The image was subsequently passed through a perspective transform to obtain the birds eye view of the road for lane detection. This is done by identifying a polygon in the raw image to be mapped to a rectangle in the transformed image. To simplify the process, an image in which the road was straight was used to, as the transform would be validated when a rectangle is seen in the final image. 
 
-![alt text][image3]
-
-#### 3. Describe how (and identify where in your code) you performed a perspective transform and provide an example of a transformed image.
-
-The code for my perspective transform includes a function called `warper()`, which appears in lines 1 through 8 in the file `example.py` (output_images/examples/example.py) (or, for example, in the 3rd code cell of the IPython notebook).  The `warper()` function takes as inputs an image (`img`), as well as source (`src`) and destination (`dst`) points.  I chose the hardcode the source and destination points in the following manner:
+I chose the hardcode the source and destination points in the following manner:
 
 ```python
 src = np.float32(
@@ -81,16 +56,17 @@ dst = np.float32(
     [(img_size[0] * 3 / 4), 0]])
 ```
 
-This resulted in the following source and destination points:
-
-| Source        | Destination   | 
-|:-------------:|:-------------:| 
-| 585, 460      | 320, 0        | 
-| 203, 720      | 320, 720      |
-| 1127, 720     | 960, 720      |
-| 695, 460      | 960, 0        |
-
 I verified that my perspective transform was working as expected by drawing the `src` and `dst` points onto a test image and its warped counterpart to verify that the lines appear parallel in the warped image.
+
+I used a combination of color and gradient thresholds to generate a binary image (thresholding steps at lines # through # in `another_file.py`).  Here's an example of my output for this step.  (note: this is not actually from one of the test images)
+
+![alt text][image3]
+
+### 3. Color Transforms and selection of Color Space
+The next step in the pipeline is to transform the image based on color space, to increase the contrast between lane lines and the other objects in the foreground and background. Several colorspaces were explored and the experimentation may be found in the Project_working.ipynb code. Examples of these color spaces include using the Sobel Operator, RGB, HLS, YUV and grayscale. 
+
+The final lane-line detection combination was used by merging the L-channel of the HLS and the Y-channel of the YUV color space. An either-or condition was used to enhance the robustness of the detection method, although this potentially introduces false positives as well, which will be discussed in the last section. 
+
 
 ![alt text][image4]
 
