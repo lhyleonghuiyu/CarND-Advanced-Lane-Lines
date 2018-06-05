@@ -50,7 +50,7 @@ I verified that my perspective transform was working as expected by drawing the 
 ### 3. Color Transforms and selection of Color Space
 The next step in the pipeline is to generate a binary image based on the different thresholds across different colorspaces, to increase the contrast between lane lines and ground. Several colorspaces were explored and the experimentation may be found in the Project_working.ipynb code. Examples of these color spaces include using the Sobel Operator, RGB, HLS, YUV and grayscale. 
 
-The final lane-line detection combination was used by merging the L-channel of the HLS and the Y-channel of the YUV color space. An either-or condition was used to enhance the robustness of the detection method, although this potentially introduces false positives as well, which will be discussed in the last section. 
+The final lane-line detection combination was used by merging the results of the B-channel from the Lab colorspace, and L-channel, from LUV color space. The B-channel detects the yellow lane lines, while the L-channel detects the white lines. 
 
 The final color transformation is done via the function lanes_bw
 
@@ -59,9 +59,7 @@ The final color transformation is done via the function lanes_bw
 
 ### 4. Lane Lines Identification 
 
-The sliding window convolution method was used to detect the lane pixels for the left and right lane lines. This is performed in the get_lane_lines function, which returns the pixel coordinates of the left and right lane lines in the form of a binary image
-
-The result is then passed into a convert_to_xy function, which converts this binary image into an array of points for polynomial fitting. The polynomial fitting is performed to a 2nd order polynomial using the np.polyfit function. This can be found in the get_rad_and_curv function. 
+The sliding window method was used to detect the lane pixels for the left and right lane lines. This is performed in the  find_lanes function, which returns the polynomial coefficients of the left and right lane lines. It also returns the indices of the left and right points in the image. 
 
 ![alt text][image5]
 
@@ -74,7 +72,7 @@ Assuming the camera is mounted in the center of the car, we would assume the cen
 
 ### 6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
 
-I implemented this step in lines # through # in my code in `yet_another_file.py` in the function `map_lane()`.  Here is an example of my result on a test image:
+The resulting polynomial was then unwarped and superimposed onto the original image. 
 
 ![alt text][image6]
 
@@ -99,3 +97,5 @@ There were several difficulties faced while working on this project.
 2. Obtaining an optimal threshold for identifying the lane lines. The grey roads tended to affect the detection of lanes. In addition, yellow lane lines were particularly difficult to detect. As such, the HSV colorspace was used to detect the yellow lines, and YUV for white lines. Superimposing the results would produce a binary image that could detect both yellow and white lines. 
 
 3. Lane line detection: the pipeline would tend to crash should it not be able to detect lane lines on a particular side of the road. As such, the thresholds were loosened in order to allow for the detection of lane lines. 
+
+4. Using the cv2 and the ffmpeg library to read images resulted in different results. This is because cv2 has a default colorspace of BGR, while ffmpeg has a default colorspace of RGB. As such, it is imperative to ensure that the images fed through the pipeline are using a standardized colorspace, to prevent skewed results, despite having a working lane detection algorithm. 
